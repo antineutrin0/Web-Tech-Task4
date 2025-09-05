@@ -11,6 +11,5 @@ connectDB();
 const PORT=process.env.PORT || 5000;
 app.use('/api/users',require('./routes/user'))
 app.use('/api/admin',require('./routes/admin'))
-
-
+app.use('/api/tasks',require('./routes/task'))
 app.listen(PORT,console.log(`server is running on port ${PORT}`))
