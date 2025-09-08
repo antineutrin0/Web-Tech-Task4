@@ -4,9 +4,11 @@ const { body } = require('express-validator');
 const { authUser } = require('../middlewares/auth.middleware');
 const { createTask, getTasks, updateTask, deleteTask } = require('../controllers/task.controller');
 
-
+router.get('/', (req, res) => {
+  res.send('Task Management API');
+});
 router.post(
-    '/',
+    '/addtask',
     authUser,
     [
         body('title').isLength({ min: 3 }).withMessage('Title must be at least 3 characters'),
@@ -15,10 +17,10 @@ router.post(
     createTask
 );
 
-router.get('/', authUser, getTasks);
+router.get('/alltask', authUser, getTasks);
 
-router.put('/:taskId', authUser, updateTask);
+router.put('/update-task/:taskId', authUser, updateTask);
 
-router.delete('/:taskId', authUser, deleteTask);
+router.delete('/delete-task/:taskId', authUser, deleteTask);
 
 module.exports = router;

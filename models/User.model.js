@@ -1,57 +1,51 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
+const connectDB = require('../db/db');
 
-const userSchema = new mongoose.Schema({
-    fullname: {
-        firstname: {
-            type: String,
-            required: true,
-            minlength: [3, "Minimum 3 characters required"]
-        },
-        lastname: {
-            type: String,
-            required: true,
-            minlength: [3, "Minimum 3 characters required"] 
-        }
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    password: {
-        type: String,
-        required: true,
-        select: false
-    },
-    socketId: {
-        type: String
-    },
-    role: {
-        type: String,
-        enum: ['user', 'admin'], 
-        default: 'user'         
-    }
-});
+class UserModel {
+  static async findByEmail(email) {
+    const pool = await connectDB();
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    return rows[0];
+  }
 
-userSchema.methods.generateAuthToken = async function() {
-    const token = jwt.sign(
-        { _id: this._id, role: this.role }, 
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
+  static async findById(id) {
+    const pool = await connectDB();
+    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    return rows[0];
+  }
+
+  static async create({ firstname, lastname, email, password, role }) {
+    const pool = await connectDB();
+    const [result] = await pool.query(
+      'INSERT INTO users (firstname, lastname, email, password, role) VALUES (?, ?, ?, ?, ?)',
+      [firstname, lastname, email, password, role]
     );
-    return token;
-}
+    return { id: result.insertId, firstname, lastname, email, role };
+  }
 
-userSchema.methods.comparePassword = async function(enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
-}
+  static async deleteById(id) {
+    const pool = await connectDB();
+    await pool.query('DELETE FROM users WHERE id = ?', [id]);
+    return true;
+  }
 
-userSchema.statics.hashPassword = async function(password) {
+  // utils
+  static async hashPassword(password) {
     return await bcrypt.hash(password, 10);
+  }
+
+  static async comparePassword(enteredPassword, hashedPassword) {
+    return await bcrypt.compare(enteredPassword, hashedPassword);
+  }
+
+  static async generateAuthToken(user) {
+    return jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+  }
 }
 
-const userModel = mongoose.model('User', userSchema);
-
-module.exports = userModel;
+module.exports = UserModel;
